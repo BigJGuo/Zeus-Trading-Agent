@@ -1,0 +1,103 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg15
+    container_name: zeus-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: zeus_db
+      POSTGRES_USER: zeus
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zeus -d zeus_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: zeus-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - ./data/redis:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  zeus-scheduler:
+    build: .
+    container_name: zeus-scheduler
+    command: python -m zeus.scheduler.runner
+    env_file: .env
+    environment:
+      TZ: America/Chicago
+    volumes:
+      - ./artifacts:/app/artifacts
+      - ./logs:/app/logs
+      - ./config:/app/config
+      # backup_db_job writes pg_dumps here at 03:00 daily; host-side path
+      # so the dumps survive `docker compose down -v`.
+      - ./data/backups:/app/data/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - trading
+
+  zeus-monitor:
+    build: .
+    container_name: zeus-monitor
+    command: python -m zeus.monitoring.api
+    env_file: .env
+    environment:
+      TZ: America/Chicago
+    volumes:
+      - ./artifacts:/app/artifacts
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    profiles:
+      - trading
+
+  # Nightly backup. Run on-demand:
+  #   docker compose run --rm zeus-backup
+  # Or wire into a cron / Task Scheduler entry on the host that invokes
+  # the same command at 03:00 local. The script handles local rotation and
+  # optional off-machine upload (see scripts/backup_db.sh for env vars).
+  zeus-backup:
+    image: postgres:15-alpine
+    container_name: zeus-backup
+    env_file: .env
+    environment:
+      DB_HOST: postgres
+      DB_USER: zeus
+      DB_NAME: zeus_db
+    volumes:
+      - ./scripts/backup_db.sh:/backup.sh:ro
+      - ./data/backups:/backups
+    entrypoint: ["bash", "/backup.sh"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - backup

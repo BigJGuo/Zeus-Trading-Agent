@@ -1,0 +1,90 @@
+trading:
+  max_position_pct: 0.20
+  max_sector_pct: 0.35
+  min_adv_usd: 5_000_000
+  min_price: 5.0
+  max_price: 2000.0
+  max_positions: 20
+  min_position_notional: 2000.0
+  kelly_fraction: 0.25
+  stop_atr_multiple: 2.0
+  trailing_activation_pct: 0.02
+  trailing_pct: 0.50
+  max_hold_days: 15
+  signal_entry_threshold: 0.55
+  signal_exit_threshold: 0.30
+  min_expected_return: 0.005
+  min_confidence: 0.45
+  max_spread_bps: 50
+  broker_buying_power_buffer: 0.05
+
+risk:
+  drawdown_l1_usd: 10000
+  drawdown_l2_usd: 20000
+  drawdown_l3_usd: 35000
+  drawdown_l4_usd: 50000
+  daily_loss_pause_usd: 3000
+  daily_loss_stop_usd: 5000
+  max_single_order_notional: 25000
+  min_liquidity_adv_multiple: 0.05
+  max_correlation: 0.75
+  ic_degraded_threshold: 0.01
+  ic_degraded_days: 5
+  model_degraded_size_multiplier: 0.50
+
+models:
+  feature_version: "v1"
+  training_window_days: 504
+  validation_window_days: 63
+  retrain_day_of_week: "sunday"
+  min_training_samples: 10000
+  forward_return_days: 5
+  xgb_return:
+    n_estimators: 500
+    max_depth: 5
+    learning_rate: 0.01
+    subsample: 0.8
+    colsample_bytree: 0.8
+    early_stopping_rounds: 50
+    random_state: 42
+  lgb_direction:
+    n_estimators: 300
+    max_depth: 4
+    learning_rate: 0.02
+    num_leaves: 31
+    random_state: 42
+
+promotion_gates:
+  information_coefficient: 0.03
+  ic_stability: 0.30
+  hit_rate: 0.52
+  sharpe_on_signals: 0.80
+  max_drawdown_on_signals: -0.25
+
+data:
+  universe_refresh_days: 7
+  fundamentals_refresh_days: 7
+  macro_refresh_days: 7
+  lookback_days: 504
+  intraday_check_interval_minutes: 15
+  quote_cache_ttl_seconds: 5
+
+scheduler:
+  after_market_close_hour: 16
+  after_market_close_minute: 30
+  premarket_hour: 7
+  premarket_minute: 0
+  heartbeat_interval_minutes: 30
+
+telegram:
+  max_messages_per_hour: 30
+  heartbeat_interval_minutes: 30
+  enabled: true
+
+backtesting:
+  commission_per_share: 0.005
+  slippage_bps: 10
+  initial_capital: 100000.0
+  walk_forward_train_months: 18
+  walk_forward_test_months: 3
+  walk_forward_step_months: 1

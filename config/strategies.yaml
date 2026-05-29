@@ -1,0 +1,49 @@
+# Trader-agent strategy declarations. Loaded by zeus.config.strategies.
+#
+# Each strategy maps a named trader agent to a registered model + risk envelope.
+# The `weight` values must sum to 1.0; StrategyAllocator uses them to partition
+# the shared portfolio's buying power between the three agents every session.
+#
+# The `model_name` must resolve to a row in `model_versions` whose status is
+# 'staging' or 'production' — runner._load_model_by_name picks the newest row.
+
+strategies:
+  - id: day
+    model_name: cross_horizon_day_h3
+    horizon_days: 3
+    max_hold_days: 5
+    weight: 0.30
+    max_positions: 8
+    max_position_pct: 0.08       # % of total portfolio NAV per name
+    max_exposure_pct: 0.45       # % of total portfolio NAV this agent may use
+    enabled: true
+
+  - id: swing
+    model_name: cross_horizon_swing_h5
+    horizon_days: 5
+    max_hold_days: 10
+    weight: 0.40
+    max_positions: 10
+    max_position_pct: 0.10
+    max_exposure_pct: 0.50
+    enabled: true
+
+  - id: long_term
+    model_name: cross_horizon_long_term_h20
+    horizon_days: 20
+    max_hold_days: 60
+    weight: 0.30
+    max_positions: 8
+    max_position_pct: 0.12
+    max_exposure_pct: 0.40
+    enabled: true
+
+# Global invariants the StrategyManager enforces across all strategies.
+globals:
+  # Maximum aggregate NAV fraction across all agents — protects against two
+  # agents both maxing out and levering the account.
+  max_total_exposure_pct: 0.95
+
+  # When two agents want the same symbol, the second is admitted only if the
+  # combined per-symbol notional stays under global_max_position_pct.
+  global_max_position_pct: 0.18

@@ -1,0 +1,42 @@
+# --- Secrets / credentials ---
+.env
+.env.*
+*.pem
+*.key
+
+# --- Large data / dumps / artifacts (do NOT belong in git) ---
+data/
+artifacts/
+logs/
+*.tgz
+*.dump
+*.sql
+zeus-migration.tgz
+zeus_db.dump
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+
+# --- OS / editor cruft ---
+.DS_Store
+Thumbs.db
+
+# --- Accidental junk dirs ---
+scripts;C/
+zeus;C/

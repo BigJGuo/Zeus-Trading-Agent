@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZEUS — Live</title>
+  <link rel="stylesheet" href="/static/dashboard.css?v=roadmap-1" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header id="header">
+    <div class="brand">
+      <span class="bolt">⚡</span><span>ZEUS</span>
+      <span id="env-badge" class="badge">paper</span>
+    </div>
+    <div class="hdr-stats">
+      <div class="stat"><label>Portfolio</label><span id="stat-portfolio">—</span></div>
+      <div class="stat"><label>Daily PnL</label><span id="stat-daily-pnl">—</span></div>
+      <div class="stat"><label>All-time P&amp;L</label><span id="stat-unrealized">—</span></div>
+      <div class="stat"><label>Drawdown</label><span id="stat-drawdown">—</span></div>
+      <div class="stat"><label>Positions</label><span id="stat-positions">—</span></div>
+      <div class="stat"><label>Regime</label><span id="stat-regime">—</span></div>
+      <div class="stat"><label>Kill-switch</label><span id="stat-kill">—</span></div>
+      <div class="stat"><label>Model</label><span id="stat-model">—</span></div>
+      <div class="stat"><label>Heartbeat</label><span id="stat-heartbeat">—</span></div>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="card wide">
+      <h2>Portfolio value (30d)</h2>
+      <div class="chart-wrap"><canvas id="portfolio-chart"></canvas></div>
+    </section>
+
+    <section class="card">
+      <h2>Today's plan <span id="plan-date" class="muted"></span></h2>
+      <div id="plan-body">loading…</div>
+    </section>
+
+    <section class="card">
+      <h2>Open positions <span id="positions-count" class="muted"></span></h2>
+      <div class="table-wrap"><table id="positions-table">
+        <thead><tr>
+          <th>Symbol</th><th>Qty</th><th>Entry</th><th>Last</th>
+          <th>Market value</th><th>PnL $</th><th>PnL %</th><th>Stop</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
+
+    <section class="card">
+      <h2>Pending orders <span id="orders-count" class="muted"></span></h2>
+      <div class="table-wrap"><table id="orders-table">
+        <thead><tr>
+          <th>Symbol</th><th>Side</th><th>Type</th><th>Qty</th>
+          <th>Filled</th><th>Limit</th><th>Status</th><th>Submitted</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
+
+    <section class="card">
+      <h2>Recent fills <span id="fills-count" class="muted"></span></h2>
+      <div class="table-wrap"><table id="fills-table">
+        <thead><tr>
+          <th>Time (CT)</th><th>Symbol</th><th>Side</th><th>Shares</th>
+          <th>Price</th><th>Type</th><th>P&amp;L</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
+
+    <section class="card">
+      <h2>Risk events</h2>
+      <ul id="risk-list" class="event-list"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Health</h2>
+      <ul id="health-list" class="event-list"></ul>
+    </section>
+
+    <section class="card wide">
+      <h2>
+        Today's schedule
+        <span id="daily-checklist-badge" class="muted"></span>
+      </h2>
+      <div class="table-wrap"><table id="daily-checklist-table">
+        <thead><tr>
+          <th>State</th><th>Job</th><th>Next run</th><th>Last run today</th>
+          <th>Runs today</th><th>Notes</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </section>
+
+    <section class="card wide">
+      <h2>
+        Scheduler timeline
+        <span class="muted">all times CT — static reference, not live</span>
+      </h2>
+      <div class="tl">
+
+        <div class="tl-phase">
+          <div class="tl-phase-hdr">Pre-market</div>
+          <ul class="tl-list">
+            <li><span class="tl-time">4:00 AM</span><span class="tl-name">day_research_premarket</span><span class="tl-note">overnight news/gap scan, run 1 of 3</span></li>
+            <li><span class="tl-time">6:00 AM</span><span class="tl-name">day_research_premarket</span><span class="tl-note">run 2 of 3</span></li>
+            <li><span class="tl-time">7:00 AM</span><span class="tl-name">premarket_summary</span><span class="tl-note">Telegram pre-market brief</span></li>
+            <li><span class="tl-time">8:00 AM</span><span class="tl-name">day_research_premarket</span><span class="tl-note">final pre-open brief</span></li>
+            <li><span class="tl-time">8:10 AM</span><span class="tl-name">day_trader_morning_plan</span><span class="tl-note">day strategy plan for the open</span></li>
+          </ul>
+        </div>
+
+        <div class="tl-phase">
+          <div class="tl-phase-hdr">Market open</div>
+          <ul class="tl-list">
+            <li><span class="tl-time tl-time-strong">8:30 AM</span><span class="tl-name">market_open</span><span class="tl-note">manual_trim (if file present) → execute_entries (all strategies)</span></li>
+          </ul>
+        </div>
+
+        <div class="tl-phase">
+          <div class="tl-phase-hdr">Market hours (8:30 AM – 3:00 PM, repeating)</div>
+          <ul class="tl-list">
+            <li><span class="tl-time">every 5 min</span><span class="tl-name">intraday_backfill</span><span class="tl-note">refresh recent bars</span></li>
+            <li><span class="tl-time">every 5 min</span><span class="tl-name">overseer_realtime_monitor</span><span class="tl-note">risk + halt agent checks</span></li>
+            <li><span class="tl-time">every 15 min</span><span class="tl-name">intraday_monitor</span><span class="tl-note">stops + risk gates</span></li>
+            <li><span class="tl-time">:05 :15 :25 :35 :45 :55</span><span class="tl-name">day_research_intraday_refresh</span><span class="tl-note">live setup re-rank</span></li>
+          </ul>
+        </div>
+
+        <div class="tl-phase">
+          <div class="tl-phase-hdr">Post-market</div>
+          <ul class="tl-list">
+            <li><span class="tl-time tl-time-strong">2:30 PM</span><span class="tl-name">closing</span><span class="tl-note">force-exit positions due today</span></li>
+            <li><span class="tl-time">3:15 PM</span><span class="tl-name">eod_report</span><span class="tl-note">daily P&amp;L, Telegram summary</span></li>
+            <li><span class="tl-time">3:15 PM</span><span class="tl-name">day_research_postmarket_wrap</span><span class="tl-note">day-strategy postmortem</span></li>
+            <li><span class="tl-time">3:30 PM</span><span class="tl-name">data_refresh</span><span class="tl-note">today's bars (SIP-embargoed at this hour)</span></li>
+            <li><span class="tl-time">4:00 PM</span><span class="tl-name">feature_engineering</span><span class="tl-note">build today's features</span></li>
+            <li><span class="tl-time">6:00 PM</span><span class="tl-name">swing_research_eod</span><span class="tl-note">swing briefs for next session</span></li>
+            <li><span class="tl-time">6:15 PM</span><span class="tl-name">long_term_deep_dive_or_review</span><span class="tl-note">memo refresh / new memo</span></li>
+            <li><span class="tl-time">7:00 PM</span><span class="tl-name">overseer_daily_aggregate</span><span class="tl-note">cross-agent attribution + drift</span></li>
+            <li><span class="tl-time">8:00 PM</span><span class="tl-name">next_session_planning</span><span class="tl-note">tomorrow's plan from signals</span></li>
+            <li><span class="tl-time">8:30 PM</span><span class="tl-name">company_research</span><span class="tl-note">deep dive on flagged names</span></li>
+            <li><span class="tl-time">8:30 PM</span><span class="tl-name">trader_overnight_plan</span><span class="tl-note">all 3 traders propose tomorrow's entries</span></li>
+          </ul>
+        </div>
+
+        <div class="tl-phase">
+          <div class="tl-phase-hdr">Weekly</div>
+          <ul class="tl-list">
+            <li><span class="tl-time">Sat 9:00 AM</span><span class="tl-name">long_term_monthly_review</span><span class="tl-note">first Saturday of each month</span></li>
+            <li><span class="tl-time">Sun 1:00 AM</span><span class="tl-name">nightly_retrain</span><span class="tl-note">full model retrain pipeline</span></li>
+            <li><span class="tl-time">Sun 9:00 AM</span><span class="tl-name">swing_weekly_watchlist</span><span class="tl-note">build next week's swing watchlist</span></li>
+            <li><span class="tl-time">Sun 10:00 AM</span><span class="tl-name">overseer_weekly_review</span><span class="tl-note">portfolio + agent retrospective</span></li>
+          </ul>
+        </div>
+
+        <div class="tl-phase">
+          <div class="tl-phase-hdr">Continuous</div>
+          <ul class="tl-list">
+            <li><span class="tl-time">every 30 min</span><span class="tl-name">heartbeat</span><span class="tl-note">scheduler liveness pulse</span></li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="card wide">
+      <h2>Agent status <span id="agent-status-muted" class="muted"></span></h2>
+      <div id="agent-tiles" class="agent-grid"></div>
+    </section>
+
+    <section class="card">
+      <h2>Recent job executions</h2>
+      <ul id="executions-list" class="event-list"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Program info</h2>
+      <ul id="program-info-list" class="event-list"></ul>
+    </section>
+
+    <section class="card wide" id="roadmap-section">
+      <h2>
+        Roadmap
+        <span id="roadmap-summary-badge" class="muted"></span>
+      </h2>
+      <div id="roadmap-kpis" class="roadmap-kpis">
+        <div class="stat"><label>Total</label><span id="rm-kpi-total">—</span></div>
+        <div class="stat"><label>Complete</label><span id="rm-kpi-complete">—</span></div>
+        <div class="stat"><label>In progress</label><span id="rm-kpi-inprogress">—</span></div>
+        <div class="stat" id="rm-kpi-blocked-tile"><label>Blocked</label><span id="rm-kpi-blocked">—</span></div>
+      </div>
+      <div id="roadmap-body">loading…</div>
+    </section>
+
+    <!-- Modal: blocked-reason capture for the Roadmap tab -->
+    <div id="roadmap-modal" class="rm-modal" style="display:none">
+      <div class="rm-modal-card">
+        <h3>Mark task as blocked</h3>
+        <p class="muted" id="rm-modal-task-id"></p>
+        <textarea id="rm-modal-reason" placeholder="What's the blocker?" rows="4"></textarea>
+        <div class="rm-modal-actions">
+          <button class="rm-btn rm-btn-secondary" id="rm-modal-cancel">Cancel</button>
+          <button class="rm-btn rm-btn-primary" id="rm-modal-save">Save</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <span id="last-refresh">—</span>
+    <span>•</span>
+    <a href="/health" target="_blank">/health</a>
+    <a href="/api/summary" target="_blank">/api/summary</a>
+  </footer>
+
+  <script src="/static/dashboard.js?v=roadmap-1"></script>
+</body>
+</html>
